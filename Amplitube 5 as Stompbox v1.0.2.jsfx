@@ -1,0 +1,53 @@
+desc:Amplitube 5 Stomp Box Hack (via MIDI notes 0-15)
+
+// author: Stefan Behrens
+// version: 1.0.2
+// date: 2025-01-03
+// license: MIT
+
+// Quick hack to trigger stomp boxes in Amplitube 5 using the
+// ... footswitches on the Behringer FCB1010 or the
+// ... drum pads on the Novation Impulse 25.
+// The switches or pads have to send the lowest MIDI notes (0,1,2,...).
+// The MIDI mappings in Amplitube 5 must be set to 'latch' mode.
+// The script converts note on messages for the MIDI notes 0-11
+// to the MIDI CCs 102-113 with values 127/0. 
+// All other MIDI events are passed through.
+//
+// (Note: In both cases, the devices do not sent proper 'note off' messages
+//  but rather 'note on' messages with velocity 0.)
+
+// CHANGE LOG:
+// 1.0.2 -- code clean up, better documentation
+
+
+@init
+// relevant MIDI event types (on channel 0)
+noteOn = 0x90;              // MIDI message type: note on
+noteOff = 0x80;             // MIDI message type: note off
+controlChange = 0xB0;       // MIDI message type: control change
+//programChange=0xC0;       // MIDI message type: program change
+
+@block
+
+// receive MIDI input
+while (midirecv(evtTime,evtTypeChannel,evtNumber,evtValue)) ( 
+    // EXPLANATION:
+    // evtTime : ???
+    // evtTypeChannel (8 bits): event type (first 4 bits), channel number (last 4 bits)
+    // evtNumber : note numbers, cc number, etc
+    // evtValue : note velocity, cc value, etc
+
+// separate event type and channel
+evtType = (evtTypeChannel & 0xF0);    // MIDI event type
+evtChannel = (evtTypeChannel & 0x0F); // MIDI channel number
+  // Note: evtTypeChannel == evtType + evtChannel (addition of binary numbers)
+
+// convert notes 0-15 to CCs 102-119
+    evtType == noteOn && evtNumber < 16 ? (
+      newTypeChannel = controlChange + evtChannel;  // control change (CC) on same channel
+      newNumber = evtNumber + 102;                  // CC number in range 102-113
+      newValue = 0; evtValue > 0 ? newValue = 127;  // converts note velocity to CC values 0/127
+      midisend(evtTime,newTypeChannel,newNumber,newValue) ):
+      midisend(evtTime,evtTypeChannel,evtNumber,evtValue);
+);

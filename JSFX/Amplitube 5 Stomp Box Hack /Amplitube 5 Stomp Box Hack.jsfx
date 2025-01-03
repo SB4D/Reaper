@@ -33,7 +33,7 @@ controlChange = 0xB0;       // MIDI message type: control change
 // receive MIDI input
 while (midirecv(evtTime,evtTypeChannel,evtNumber,evtValue)) ( 
     // EXPLANATION:
-    // evtTime : ???
+    // evtTime : event time (presumably in samples, but the unit doesn't matter here)
     // evtTypeChannel (8 bits): event type (first 4 bits), channel number (last 4 bits)
     // evtNumber : note numbers, cc number, etc
     // evtValue : note velocity, cc value, etc
